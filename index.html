@@ -2,347 +2,93 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>スーパーマルバツゲーム</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>動作確認用インデックス</title>
     <style>
-        :root {
-            --p1-color: #ff4757;
-            --p2-color: #2e86de;
-            --tri-color: #2ecc71;
-            --bg-color: #1a1a1a;
-            --cell-bg: #333;
-            --gold: linear-gradient(45deg, #ffd700, #ff8c00);
-        }
-
         body {
-            font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
-            background-color: var(--bg-color);
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
             margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            height: 100vh;
-            color: #fff;
-            overflow: hidden;
-            -webkit-user-select: none;
-            transition: background-color 0.5s;
+            padding: 40px 20px;
         }
-
-        .game-title {
-            font-size: 1.2rem;
-            font-weight: 900;
-            background: var(--gold);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin: 5px 0;
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
-
-        .status-area {
-            width: 100%;
-            padding: 10px;
-            text-align: center;
-            transition: all 0.5s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-            flex: 1;
-            justify-content: center;
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            border-bottom: 2px solid #edf2f7;
+            padding-bottom: 10px;
         }
-        #area-p2 { transform: rotate(180deg); border-bottom: 1px solid #444; }
-        #area-p1 { border-top: 1px solid #444; }
-
-        .active-p1 { background-color: rgba(255, 71, 87, 0.25); box-shadow: 0 0 40px var(--p1-color); }
-        .active-p2 { background-color: rgba(46, 134, 222, 0.25); box-shadow: 0 0 40px var(--p2-color); }
-        .inactive { opacity: 0.1; filter: grayscale(100%); }
-
-        .winner-display {
-            font-size: 2.5rem !important;
-            font-weight: 900 !important;
-            animation: victory-bounce 0.8s infinite alternate;
-            background: none !important;
-            -webkit-text-fill-color: #fff !important;
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
         }
-        @keyframes victory-bounce { from { transform: scale(1); } to { transform: scale(1.1); } }
-
-        .board-container { position: relative; padding: 30px; transition: opacity 0.5s; }
-        .board {
-            display: grid;
-            grid-template-columns: repeat(3, 85px);
-            grid-template-rows: repeat(3, 85px);
-            gap: 12px;
+        li {
+            margin-bottom: 12px;
         }
-
-        .cell {
-            width: 85px; height: 85px;
-            background-color: var(--cell-bg);
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            font-weight: 900;
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.6);
+        a {
+            display: block;
+            padding: 12px 16px;
+            background-color: #f8fafc;
+            color: #3182ce;
+            text-decoration: none;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
         }
-        .o-mark { color: var(--p1-color); text-shadow: 0 0 15px var(--p1-color); }
-        .x-mark { color: var(--p2-color); text-shadow: 0 0 15px var(--p2-color); }
-        .tri-mark { color: var(--tri-color); text-shadow: 0 0 15px var(--tri-color); }
-        
-        .star-mark-p1 { color: var(--p1-color); text-shadow: 0 0 20px var(--p1-color); animation: star-pulse 0.8s infinite alternate; }
-        .star-mark-p2 { color: var(--p2-color); text-shadow: 0 0 20px var(--p2-color); animation: star-pulse 0.8s infinite alternate; }
-        
-        @keyframes star-pulse { from { opacity: 0.5; transform: scale(0.85); } to { opacity: 1; transform: scale(1.05); } }
-
-        .controls { display: flex; gap: 5px; min-height: 40px; flex-wrap: wrap; justify-content: center; }
-        button {
-            padding: 5px 8px;
-            border-radius: 15px;
-            border: none;
-            background: #444;
-            color: white;
-            font-size: 0.7rem;
-            font-weight: bold;
-        }
-        button.active { background: #27ae60; box-shadow: 0 0 10px #27ae60; }
-        button.hidden { display: none; }
-
-        .sh-btn {
-            position: absolute; background: #27ae60; width: 35px; height: 35px;
-            border-radius: 50%; display: none; align-items: center; justify-content: center; z-index: 10;
-        }
-        .show { display: flex; }
-        #r0 { top: 48px; left: -5px; } #r1 { top: 146px; left: -5px; } #r2 { top: 244px; left: -5px; }
-        #c0 { left: 48px; top: -5px; } #c1 { left: 150px; top: -5px; } #c2 { left: 244px; top: -5px; }
-
-        .reset-btn {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            padding: 20px 40px; background: white; color: black; z-index: 100; display: none;
-            border-radius: 40px; font-weight: 900; font-size: 1.4rem;
+        a:hover {
+            background-color: #ebf8ff;
+            border-color: #bee3f8;
+            color: #2b6cb0;
+            transform: translateY(-1px);
         }
     </style>
 </head>
 <body>
 
-<div id="area-p2" class="status-area inactive">
-    <div class="game-title">スーパーマルバツゲーム</div>
-    <div id="txt-p2">相手の番</div>
-    <div class="controls">
-        <button id="ow-p2" onclick="setMode('ow')">上書き</button>
-        <button id="sh-p2" onclick="setMode('sh')">🐢甲羅 (2)</button>
-        <button id="on-p2" onclick="execOnigiri()">🍙おにぎり</button>
-        <button id="st-p2" onclick="setMode('st')">⭐スター</button>
-    </div>
+<div class="container">
+    <h1>動作確認用リンク一覧</h1>
+    <ul id="link-list">
+        <!-- ここにJavaScriptで自動的にリンクが生成されます -->
+    </ul>
 </div>
-
-<div id="board-wrap" class="board-container">
-    <div id="r0" class="sh-btn" onclick="execShell('r',0)">→</div>
-    <div id="r1" class="sh-btn" onclick="execShell('r',1)">→</div>
-    <div id="r2" class="sh-btn" onclick="execShell('r',2)">→</div>
-    <div id="c0" class="sh-btn" onclick="execShell('c',0)">↓</div>
-    <div id="c1" class="sh-btn" onclick="execShell('c',1)">↓</div>
-    <div id="c2" class="sh-btn" onclick="execShell('c',2)">↓</div>
-
-    <div class="board" id="board">
-        <div class="cell" onclick="handleTap(0)"></div>
-        <div class="cell" onclick="handleTap(1)"></div>
-        <div class="cell" onclick="handleTap(2)"></div>
-        <div class="cell" onclick="handleTap(3)"></div>
-        <div class="cell" onclick="handleTap(4)"></div>
-        <div class="cell" onclick="handleTap(5)"></div>
-        <div class="cell" onclick="handleTap(6)"></div>
-        <div class="cell" onclick="handleTap(7)"></div>
-        <div class="cell" onclick="handleTap(8)"></div>
-    </div>
-</div>
-
-<div id="area-p1" class="status-area">
-    <div class="game-title">スーパーマルバツゲーム</div>
-    <div id="txt-p1">あなたの番</div>
-    <div class="controls">
-        <button id="ow-p1" onclick="setMode('ow')">上書き</button>
-        <button id="sh-p1" onclick="setMode('sh')">🐢甲羅 (2)</button>
-        <button id="on-p1" onclick="execOnigiri()">🍙おにぎり</button>
-        <button id="st-p1" onclick="setMode('st')">⭐スター</button>
-    </div>
-</div>
-
-<button id="rb" class="reset-btn" onclick="location.reload()">もう一度遊ぶ</button>
 
 <script>
-    let turn = '○';
-    let boardData = Array(9).fill('');
-    let starDurations = Array(9).fill(0); 
-    let isGameActive = true;
-    let starCount = 0;
-    let inventory = { 
-        '○': { ow: 1, sh: 2, on: 1, st: 1, activeMode: '' }, 
-        '×': { ow: 1, sh: 2, on: 1, st: 1, activeMode: '' } 
-    };
+    // ==========================================
+    // 【リンクの追加・変更はここを変更するだけ！】
+    // ==========================================
+    const pages = [
+        { url: "super-marubatsu.html", title: "スーパー○×ゲーム" },
+        { url: "test-page.html",       title: "テストページ（サンプル）" },
+        // 新しいページを増やしたいときは、下にカンマ区切りで追加していけます
+        // 例: { url: "game2.html", title: "新しいゲーム" }
+    ];
 
-    function handleTap(i) {
-        if(!isGameActive || inventory[turn].activeMode === 'sh') return;
-        const p = inventory[turn];
-        const currentStarMark = (turn === '○' ? '★1' : '★2');
-
-        if(p.activeMode === 'st') {
-            if(boardData[i] === '' || boardData[i] === '△' || boardData[i] === '○' || boardData[i] === '×') {
-                boardData[i] = currentStarMark;
-                starDurations[i] = 3; // 3ターンに設定
-                starCount++;
-                refreshBoard();
-                if(starCount >= 3) {
-                    p.st--; p.activeMode = ''; starCount = 0; nextTurn();
-                }
-            }
-            return;
-        }
-
-        if(boardData[i] === '★1' || boardData[i] === '★2') {
-            if(boardData[i] !== currentStarMark) return;
-        }
-
-        if(boardData[i] === '' || boardData[i] === currentStarMark || (p.activeMode === 'ow' && boardData[i] !== turn)) {
-            if(p.activeMode === 'ow') { p.ow--; p.activeMode = ''; }
-            boardData[i] = turn;
-            starDurations[i] = 0;
-            refreshBoard();
-            checkVictory();
-        }
-    }
-
-    function setMode(m) {
-        if(!isGameActive) return;
-        const p = inventory[turn];
-        p.activeMode = (p.activeMode === m) ? '' : m;
-        starCount = 0;
-        updateUI();
-    }
-
-    function execShell(type, idx) {
-        const p = inventory[turn];
-        let targets = type === 'r' ? [idx*3, idx*3+1, idx*3+2] : [idx, idx+3, idx+6];
-        targets.forEach(i => {
-            boardData[i] = '';
-            starDurations[i] = 0;
-        });
-        p.sh--; p.activeMode = '';
-        refreshBoard();
-        nextTurn();
-    }
-
-    function execOnigiri() {
-        if(!isGameActive) return;
-        const p = inventory[turn];
-        if(p.on <= 0) return;
-        let indices = [0,1,2,3,4,5,6,7,8];
-        indices.sort(() => Math.random() - 0.5);
-        let selection = indices.slice(0, 2);
-        selection.forEach(idx => { 
-            boardData[idx] = '△'; 
-            starDurations[idx] = 0;
-        });
-        p.on--; refreshBoard(); nextTurn();
-    }
-
-    function nextTurn() {
-        turn = (turn === '○') ? '×' : '○';
-        const pStarMark = (turn === '○' ? '★1' : '★2');
-        for(let i=0; i<9; i++) {
-            if(boardData[i] === pStarMark) {
-                starDurations[i]--;
-                if(starDurations[i] <= 0) {
-                    boardData[i] = '';
-                }
-            }
-        }
-        refreshBoard();
-        updateUI();
-    }
-
-    function refreshBoard() {
-        const cells = document.querySelectorAll('.cell');
-        boardData.forEach((val, i) => {
-            cells[i].innerText = (val.startsWith('★') ? '★' : val);
-            let cn = 'cell ';
-            if(val === '○') cn += 'o-mark';
-            else if(val === '×') cn += 'x-mark';
-            else if(val === '△') cn += 'tri-mark';
-            else if(val === '★1') cn += 'star-mark-p1';
-            else if(val === '★2') cn += 'star-mark-p2';
-            cells[i].className = cn;
-        });
-    }
-
-    function checkVictory() {
-        const winLines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-        let isWin = winLines.some(line => {
-            const b = boardData;
-            return b[line[0]] !== '' && b[line[0]] !== '△' && !b[line[0]].startsWith('★') &&
-                   b[line[0]] === b[line[1]] && b[line[0]] === b[line[2]];
-        });
+    // リンクを自動生成する処理
+    const listContainer = document.getElementById('link-list');
+    pages.forEach(page => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = page.url;
+        a.textContent = page.title;
         
-        if(isWin) {
-            isGameActive = false;
-            showVictoryEffect(turn);
-        } else if(!boardData.includes('')) {
-            isGameActive = false;
-            showVictoryEffect('draw');
-        } else {
-            nextTurn();
-        }
-    }
-
-    function showVictoryEffect(winner) {
-        const p1Area = document.getElementById('area-p1');
-        const p2Area = document.getElementById('area-p2');
-        const board = document.getElementById('board-wrap');
-        board.style.opacity = "0.2";
-        if(winner === 'draw') {
-            document.body.style.backgroundColor = "#444";
-            p1Area.innerText = "引き分け！"; p2Area.innerText = "引き分け！";
-            p1Area.className = p2Area.className = "status-area winner-display";
-        } else {
-            document.body.style.backgroundColor = (winner === '○' ? 'var(--p1-color)' : 'var(--p2-color)');
-            if(winner === '○') {
-                p1Area.innerText = "○ の勝利！！"; p1Area.className = "status-area winner-display";
-                p2Area.style.display = "none";
-            } else {
-                p2Area.innerText = "× の勝利！！"; p2Area.className = "status-area winner-display";
-                p1Area.style.display = "none";
-            }
-        }
-        document.getElementById('rb').style.display = 'block';
-    }
-
-    function updateUI() {
-        if(!isGameActive) return;
-        document.getElementById('area-p1').className = 'status-area ' + (turn === '○' ? 'active-p1' : 'inactive');
-        document.getElementById('area-p2').className = 'status-area ' + (turn === '×' ? 'active-p2' : 'inactive');
+        // ローカル環境(file://)とサーバー環境(GitHub Pages等)の両方で動きやすくするため
+        // ターゲットを別タブ(_blank)にしておくと確認がスムーズです
+        a.target = "_blank"; 
         
-        const modeText = inventory[turn].activeMode === 'st' ? `あと ${3-starCount} マス選択` : (turn === '○' ? 'あなたの番' : '相手の番');
-        document.getElementById('txt-p1').innerText = (turn === '○' ? modeText : '相手の番');
-        document.getElementById('txt-p2').innerText = (turn === '×' ? modeText : '相手の番');
-        
-        ['○','×'].forEach(pMark => {
-            const id = (pMark === '○' ? 'p1' : 'p2');
-            const p = inventory[pMark];
-            document.getElementById('sh-' + id).innerText = `🐢甲羅 (${p.sh})`;
-            document.getElementById('ow-' + id).className = (p.ow === 0 ? 'hidden' : (p.activeMode === 'ow' ? 'active' : ''));
-            document.getElementById('sh-' + id).className = (p.sh === 0 ? 'hidden' : (p.activeMode === 'sh' ? 'active' : ''));
-            document.getElementById('on-' + id).className = (p.on === 0 ? 'hidden' : '');
-            document.getElementById('st-' + id).className = (p.st === 0 ? 'hidden' : (p.activeMode === 'st' ? 'active' : ''));
-            
-            document.getElementById('ow-' + id).disabled = document.getElementById('sh-' + id).disabled = 
-            document.getElementById('on-' + id).disabled = document.getElementById('st-' + id).disabled = (turn !== pMark);
-        });
-
-        document.querySelectorAll('.sh-btn').forEach(b => {
-            b.classList.toggle('show', inventory[turn].activeMode === 'sh');
-        });
-    }
-
-    updateUI();
+        li.appendChild(a);
+        listContainer.appendChild(li);
+    });
 </script>
+
 </body>
 </html>
