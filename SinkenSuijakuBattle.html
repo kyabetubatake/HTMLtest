@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2人対戦！神経衰弱（ターン交代制）</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        /* スコアボードのスタイル */
+        .scoreboard {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .player-box {
+            padding: 10px 20px;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+        }
+
+        /* 現在のターンのプレイヤーを強調 */
+        .player-box.active.p1 {
+            border-color: #007bff;
+            background-color: #e6f0ff;
+            transform: scale(1.05);
+        }
+        .player-box.active.p2 {
+            border-color: #dc3545;
+            background-color: #ffe6e6;
+            transform: scale(1.05);
+        }
+
+        .p1-score { color: #007bff; }
+        .p2-score { color: #dc3545; }
+
+        /* 現在誰の番かを表示するアナウンス */
+        #turn-announce {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            height: 30px;
+        }
+        .text-p1 { color: #007bff; }
+        .text-p2 { color: #dc3545; }
+
+        /* カードが並ぶグリッド */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 80px);
+            gap: 10px;
+            perspective: 1000px;
+        }
+
+        /* カードの基本設定 */
+        .card {
+            width: 80px;
+            height: 110px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+            cursor: pointer;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* 裏面 */
+        .card-back {
+            background-color: #4a5568;
+            border: 2px solid #fff;
+        }
+
+        .card-front {
+            background-color: #fff;
+            transform: rotateY(180deg);
+            color: #333;
+        }
+
+        /* どちらが獲得したか分かりやすくするためのエフェクト用 */
+        .card.taken-p1 .card-front { border: 3px solid #007bff; background-color: #f0f7ff; }
+        .card.taken-p2 .card-front { border: 3px solid #dc3545; background-color: #fff5f5; }
+
+        #restart-btn {
+            margin-top: 25px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #restart-btn:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>対戦！神経衰弱</h1>
+    
+    <div id="turn-announce"></div>
+
+    <div class="scoreboard">
+        <div id="p1-box" class="player-box p1">プレイヤー1: <span id="p1-score" class="p1-score">0</span> ペア</div>
+        <div id="p2-box" class="player-box p2">プレイヤー2: <span id="p2-score" class="p2-score">0</span> ペア</div>
+    </div>
+    
+    <div class="grid" id="game-board"></div>
+    
+    <button id="restart-btn" onclick="initGame()">もう一度対戦する</button>
+
+    <script>
+        const cardIcons = ['🍎', '🍌', '🍒', '🍇', '🍉', '🍓', '🍋', '🥑'];
+        let cardsArray = [...cardIcons, ...cardIcons];
+        
+        let flippedCards = [];
+        let lockBoard = false;
+        
+        // 対戦用の変数
+        let currentPlayer = 1; // 1 または 2
+        let scores = { 1: 0, 2: 0 };
+
+        const board = document.getElementById('game-board');
+        const p1ScoreDisplay = document.getElementById('p1-score');
+        const p2ScoreDisplay = document.getElementById('p2-score');
+        const p1Box = document.getElementById('p1-box');
+        const p2Box = document.getElementById('p2-box');
+        const turnAnnounce = document.getElementById('turn-announce');
+        const restartBtn = document.getElementById('restart-btn');
+
+        // ゲームの初期化
+        function initGame() {
+            board.innerHTML = '';
+            flippedCards = [];
+            lockBoard = false;
+            currentPlayer = 1;
+            scores[1] = 0;
+            scores[2] = 0;
+            
+            p1ScoreDisplay.textContent = '0';
+            p2ScoreDisplay.textContent = '0';
+            restartBtn.style.display = 'none';
+            
+            updateTurnDisplay();
+
+            // シャッフル
+            for (let i = cardsArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cardsArray[i], cardsArray[j]] = [cardsArray[j], cardsArray[i]];
+            }
+
+            // カード生成
+            cardsArray.forEach((icon) => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.icon = icon;
+
+                card.innerHTML = `
+                    <div class="card-face card-back"></div>
+                    <div class="card-face card-front">${icon}</div>
+                `;
+
+                card.addEventListener('click', flipCard);
+                board.appendChild(card);
+            });
+        }
+
+        // ターン表示の更新
+        function updateTurnDisplay() {
+            if (currentPlayer === 1) {
+                p1Box.classList.add('active');
+                p2Box.classList.remove('active');
+                turnAnnounce.innerHTML = '👉 <span class="text-p1">プレイヤー1</span> の番です';
+            } else {
+                p1Box.classList.remove('active');
+                p2Box.classList.add('active');
+                turnAnnounce.innerHTML = '👉 <span class="text-p2">プレイヤー2</span> の番です';
+            }
+        }
+
+        // 次のプレイヤーにターンを交代する処理
+        function switchPlayer() {
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            updateTurnDisplay();
+        }
+
+        // カードをめくる
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === flippedCards[0]) return;
+            if (this.classList.contains('flipped')) return;
+
+            this.classList.add('flipped');
+            flippedCards.push(this);
+
+            if (flippedCards.length === 1) return;
+
+            // 2枚引いたら判定
+            checkMatch();
+        }
+
+        // 一致判定
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            const isMatch = card1.dataset.icon === card2.dataset.icon;
+
+            if (isMatch) {
+                // ペア成立：現在のプレイヤーの得点
+                scores[currentPlayer]++;
+                p1ScoreDisplay.textContent = scores[1];
+                p2ScoreDisplay.textContent = scores[2];
+                
+                // どっちが取ったか分かりやすく色をつける
+                card1.classList.add(`taken-p${currentPlayer}`);
+                card2.classList.add(`taken-p${currentPlayer}`);
+
+                // 【変更点】正解でも少しだけめくったカードを見せてから次のターンへ
+                lockBoard = true;
+                setTimeout(() => {
+                    resetTurn();
+                    
+                    // 終了チェック
+                    if (scores[1] + scores[2] === cardIcons.length) {
+                        endGame();
+                    } else {
+                        // まだ残っていればターン交代
+                        switchPlayer();
+                    }
+                }, 800); // 0.8秒見せてから次の人へ
+                
+            } else {
+                // 不一致：1秒後に裏に戻してターン交代
+                lockBoard = true;
+                setTimeout(() => {
+                    card1.classList.remove('flipped');
+                    card2.classList.remove('flipped');
+                    
+                    switchPlayer();
+                    resetTurn();
+                }, 1000);
+            }
+        }
+
+        function resetTurn() {
+            flippedCards = [];
+            lockBoard = false;
+        }
+
+        // ゲーム終了処理
+        function endGame() {
+            turnAnnounce.innerHTML = '🎉 【ゲーム終了】';
+            let resultMessage = '';
+
+            if (scores[1] > scores[2]) {
+                resultMessage = `結果：プレイヤー1 の勝ち！ (${scores[1]}対${scores[2]})`;
+            } else if (scores[2] > scores[1]) {
+                resultMessage = `結果：プレイヤー2 の勝ち！ (${scores[2]}対${scores[1]})`;
+            } else {
+                resultMessage = `結果：引き分け！ (${scores[1]}対${scores[2]})`;
+            }
+
+            alert(resultMessage);
+            restartBtn.style.display = 'block';
+        }
+
+        // 初回スタート
+        initGame();
+    </script>
+</body>
+</html>
