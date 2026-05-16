@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>チキンレース！爆弾プッシュ</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #2a2a2a;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        h1 {
+            color: #ff4757;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        p.description {
+            color: #ccc;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            text-align: left;
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+        
+        /* 設定画面用のスタイル */
+        .setup-group {
+            margin: 25px 0;
+            font-size: 1.2rem;
+        }
+        .setup-group label {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .setup-group select {
+            font-size: 1.2rem;
+            padding: 8px 16px;
+            background-color: #444;
+            color: white;
+            border: 2px solid #ff4757;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* 画面の切り替え表示制御 */
+        #setup-screen {
+            display: block;
+        }
+        #game-screen {
+            display: none;
+        }
+
+        /* 爆弾のエリア */
+        #bomb-stage {
+            height: 240px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            margin: 10px 0 25px 0;
+            overflow: hidden;
+            background: #222;
+            border-radius: 10px;
+        }
+        #bomb {
+            font-size: 90px;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+        /* 火花の演出 */
+        #spark {
+            position: absolute;
+            font-size: 35px;
+            display: none;
+            z-index: 3;
+            animation: flicker 0.2s infinite alternate;
+        }
+        @keyframes flicker {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.2) translate(5px, -5px); }
+        }
+        /* ステータス情報 */
+        .status-box {
+            font-size: 1.4rem;
+            margin: 15px 0;
+            padding: 12px;
+            background-color: #3a3a3a;
+            border-radius: 8px;
+            border-left: 5px solid #ff4757;
+        }
+        .highlight {
+            color: #ffd32a;
+            font-weight: bold;
+            font-size: 1.6rem;
+        }
+        /* 操作ボタン */
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        button {
+            background-color: #ff4757;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        button:hover {
+            background-color: #ff6b81;
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .start-btn {
+            background-color: #2ed573;
+            font-size: 1.4rem;
+            padding: 15px 40px;
+        }
+        .start-btn:hover {
+            background-color: #2bcbba;
+        }
+        #back-btn {
+            background-color: #57606f;
+            padding: 10px 20px;
+            font-size: 1rem;
+        }
+        #back-btn:hover {
+            background-color: #747d8c;
+        }
+
+        /* スコアボード（常に見える位置に配置） */
+        #scoreboard {
+            margin-top: 25px;
+            text-align: left;
+            background-color: #333;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+        }
+        #scoreboard h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            color: #ffd32a;
+            border-bottom: 1px solid #555;
+            padding-bottom: 5px;
+        }
+        .score-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-bottom: 1px solid #444;
+            font-size: 1.1rem;
+        }
+        .score-entry:last-child {
+            border-bottom: none;
+        }
+        .score-entry.active-player {
+            background-color: rgba(255, 211, 42, 0.25);
+            border-left: 4px solid #ffd32a;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div id="setup-screen">
+        <h1>💣 爆弾プッシュゲーム</h1>
+        <p class="description">
+            【ゲーム説明】<br>
+            手番のプレイヤーは、スイッチを<b>1〜3回</b>自由に押すことができます。<br>
+            ゲーム開始時にランダム（10〜30回）で決まる「所定の回数」に達すると、爆弾がドカンと大爆発！<br><br>
+            爆発させたプレイヤーは即座に<b>敗北（除外）</b>となります。<br>
+            爆発した瞬間、<b>それまでに一番多くボタンを押していた人の勝ち</b>です！スリルを味わいながらたくさんボタンを押しましょう！
+        </p>
+
+        <div class="setup-group">
+            <label for="player-select">👥 プレイ人数 :</label>
+            <select id="player-select">
+                <option value="2">2人</option>
+                <option value="3">3人</option>
+                <option value="4">4人</option>
+                <option value="5" selected>5人</option>
+            </select>
+        </div>
+
+        <div class="btn-group">
+            <button class="start-btn" onclick="startGame()">🚀 ゲームスタート</button>
+        </div>
+    </div>
+
+
+    <div id="game-screen">
+        <div class="status-box">
+            手番: <span id="current-player-display" class="highlight">プレイヤー 1</span>
+        </div>
+
+        <div id="bomb-stage">
+            <div id="bomb">💣</div>
+            <div id="spark">💥</div>
+        </div>
+
+        <div class="btn-group" id="action-buttons">
+            <button onclick="pressSwitch(1)">1回押す</button>
+            <button onclick="pressSwitch(2)">2回押す</button>
+            <button onclick="pressSwitch(3)">3回押す</button>
+        </div>
+
+        <div id="scoreboard">
+            <h3>📊 全プレイヤーの状況 (プッシュ回数)</h3>
+            <div id="score-list"></div>
+        </div>
+
+        <div class="btn-group" style="margin-top: 30px;">
+            <button id="back-btn" onclick="showSetup()">⚙️ 設定・タイトルに戻る</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let totalPlayers = 5;
+    let maxClicks;       // 爆発する合計回数 (10〜30)
+    let currentClicks;   // 現在の合計クリック数
+    let currentPlayer;   // 現在のプレイヤー (0からカウント)
+    let playerScores = []; // 各プレイヤーのクリック数
+    let isGameOver = false;
+
+    // ガイダンス画面に戻る
+    function showSetup() {
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('setup-screen').style.display = 'block';
+    }
+
+    // ゲームの開始（設定情報を読み込んで初期化）
+    function startGame() {
+        // 設定された人数を取得
+        totalPlayers = parseInt(document.getElementById('player-select').value);
+
+        // 10〜30の間でランダムに設定
+        maxClicks = Math.floor(Math.random() * 21) + 10;
+        currentClicks = 0;
+        currentPlayer = 0;
+        isGameOver = false;
+        playerScores = Array(totalPlayers).fill(0);
+
+        // ボタンの復活と爆弾表示の初期化
+        document.getElementById('action-buttons').querySelectorAll('button').forEach(b => b.disabled = false);
+        const bomb = document.getElementById('bomb');
+        bomb.innerHTML = "💣";
+        bomb.style.transform = "scale(1)";
+        bomb.style.filter = "none";
+        document.getElementById('spark').style.display = "none";
+
+        // 画面の切り替え
+        document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
+
+        updateUI();
+        console.log("開発用ネタバレ: 爆発回数は " + maxClicks); // デバッグ用
+    }
+
+    // スイッチを押す処理
+    function pressSwitch(count) {
+        if (isGameOver) return;
+
+        // 選択した回数分処理
+        for (let i = 0; i < count; i++) {
+            currentClicks++;
+            playerScores[currentPlayer]++;
+
+            // 爆発判定
+            if (currentClicks >= maxClicks) {
+                explode();
+                return;
+            }
+        }
+
+        // 次のプレイヤーへ
+        currentPlayer = (currentPlayer + 1) % totalPlayers;
+        updateUI();
+    }
+
+    // 爆弾の見た目を更新する（1/4毎に変化）
+    function updateBombAppearance() {
+        const bomb = document.getElementById('bomb');
+        const spark = document.getElementById('spark');
+        
+        if (isGameOver) return;
+
+        const progress = currentClicks / maxClicks;
+
+        if (progress >= 0.75) {
+            // 残り1/4以下：真っ赤、巨大化、激しい火花
+            bomb.style.transform = "scale(2.2)";
+            bomb.style.filter = "hue-rotate(280deg) saturate(3)"; 
+            spark.style.display = "block";
+            spark.style.top = "30px";
+            spark.style.right = "140px";
+            spark.style.fontSize = "45px";
+        } else if (progress >= 0.50) {
+            // 残り2/4以下：オレンジ、拡大、火花出現
+            bomb.style.transform = "scale(1.7)";
+            bomb.style.filter = "hue-rotate(320deg) saturate(2)"; 
+            spark.style.display = "block";
+            spark.style.top = "50px";
+            spark.style.right = "170px";
+            spark.style.fontSize = "30px";
+        } else if (progress >= 0.25) {
+            // 残り3/4以下：やや黄色、少し拡大
+            bomb.style.transform = "scale(1.3)";
+            bomb.style.filter = "hue-rotate(30deg) saturate(1.5)";
+            spark.style.display = "none";
+        } else {
+            // 初期状態
+            bomb.style.transform = "scale(1)";
+            bomb.style.filter = "none";
+            spark.style.display = "none";
+        }
+    }
+
+    // 爆発時の演出と勝敗判定
+    function explode() {
+        isGameOver = true;
+        
+        // 操作ボタン無効化
+        document.getElementById('action-buttons').querySelectorAll('button').forEach(b => b.disabled = true);
+
+        // 爆発ビジュアル
+        const bomb = document.getElementById('bomb');
+        const spark = document.getElementById('spark');
+        bomb.innerHTML = "💥";
+        bomb.style.transform = "scale(4)";
+        spark.style.display = "none";
+
+        // 結果計算（爆発した人をスコア-1にして最下位にする）
+        const loser = currentPlayer;
+        let displayScores = [...playerScores];
+        displayScores[loser] = -1; 
+
+        // 最高得点をみつける
+        const maxScore = Math.max(...displayScores);
+        
+        // 勝者をリストアップ（同点対応）
+        let winners = [];
+        for (let i = 0; i < totalPlayers; i++) {
+            if (displayScores[i] === maxScore && displayScores[i] >= 0) {
+                winners.push(`プレイヤー ${i + 1}`);
+            }
+        }
+
+        // 画面の状況を最終更新してからアラートを出す
+        renderScoreboard();
+
+        setTimeout(() => {
+            alert(`🔥 どかーーん！！ 🔥\nプレイヤー ${loser + 1} が爆発させました！\n\n🏆 勝者: ${winners.join(', ')} (プッシュ回数: ${maxScore}回)`);
+        }, 200);
+    }
+
+    // 画面の更新
+    function updateUI() {
+        document.getElementById('current-player-display').innerText = `プレイヤー ${currentPlayer + 1}`;
+        updateBombAppearance();
+        renderScoreboard();
+    }
+
+    // スコアボードの描画（常にリストをリアルタイム更新）
+    function renderScoreboard() {
+        const scoreList = document.getElementById('score-list');
+        scoreList.innerHTML = '';
+
+        for (let i = 0; i < totalPlayers; i++) {
+            const entry = document.createElement('div');
+            entry.className = 'score-entry';
+            
+            // 現在の手番プレイヤーを目立たせる
+            if (i === currentPlayer && !isGameOver) {
+                entry.className += ' active-player';
+            }
+
+            let statusText = `押した回数: <b>${playerScores[i]} 回</b>`;
+            if (isGameOver && i === currentPlayer) {
+                statusText = `<span style="color: #ff4757; font-weight: bold;">💥 爆死 (失格)</span>`;
+            }
+
+            entry.innerHTML = `
+                <span>プレイヤー ${i + 1} ${i === currentPlayer && !isGameOver ? '◀(あなた番)' : ''}</span> 
+                <span>${statusText}</span>
+            `;
+            scoreList.appendChild(entry);
+        }
+    }
+</script>
+
+</body>
+</html>
