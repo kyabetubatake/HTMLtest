@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>みんなでお絵描き当てゲーム</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        button {
+            background-color: #4f46e5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #4338ca;
+        }
+
+        button.secondary {
+            background-color: #4b5563;
+        }
+
+        button.secondary:hover {
+            background-color: #374151;
+        }
+
+        button.danger {
+            background-color: #dc2626;
+        }
+
+        button.danger:hover {
+            background-color: #b91c1c;
+        }
+
+        #odai-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e1b4b;
+            margin: 15px 0;
+            min-height: 36px;
+            background-color: #e0e7ff;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        canvas {
+            border: 2px solid #333;
+            background-color: white;
+            border-radius: 8px;
+            cursor: crosshair;
+            touch-action: none; /* スマホでのスクロール防止 */
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>お絵描き当てゲーム</h1>
+
+    <div class="container">
+        <!-- 1. お題設定エリア -->
+        <div class="section">
+            <h3>① お題を決めよう（描く人だけ見てね）</h3>
+            <button onclick="generateFruitOdai()">果物のお題を出す</button>
+            <button class="secondary" onclick="customOdai()">自由にお題を決める</button>
+            
+            <div id="odai-box" class="hidden">
+                <button id="btn-toggle-odai" onclick="toggleOdaiVisibility()">お題を見る</button>
+                <div id="odai-display" class="hidden"></div>
+            </div>
+        </div>
+
+        <!-- 2. キャンバスエリア -->
+        <div class="section">
+            <h3>② 絵を描こう！</h3>
+            <canvas id="canvas" width="400" height="400"></canvas>
+            <br>
+            <button class="danger" onclick="clearCanvas()">画面をクリア</button>
+        </div>
+
+        <!-- 3. 回答・答え合わせエリア -->
+        <div class="section">
+            <h3>③ みんなで当てよう！</h3>
+            <button class="secondary" onclick="showAnswer()">答え合わせ（お題を表示）</button>
+        </div>
+    </div>
+
+    <script>
+        // 果物のお題リスト
+        const fruits = ["りんご", "バナナ", "ぶどう", "いちご", "すいか", "メロン", "みかん", "もも", "パイナップル", "キウイ", "さくらんぼ", "くり", "レモン", "かき"];
+        
+        let currentOdai = "";
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+
+        // --- お題の処理 ---
+        function generateFruitOdai() {
+            const randomIndex = Math.floor(Math.random() * fruits.length);
+            setOdai(fruits[randomIndex]);
+        }
+
+        function customOdai() {
+            const userOdai = prompt("お題を自由に入力してください（他の人に見られないように注意！）");
+            if (userOdai) {
+                setOdai(userOdai);
+            }
+        }
+
+        function setOdai(text) {
+            currentOdai = text;
+            document.getElementById('odai-box').classList.remove('hidden');
+            const display = document.getElementById('odai-display');
+            display.innerText = currentOdai;
+            display.classList.add('hidden'); // 最初は隠す
+            document.getElementById('btn-toggle-odai').innerText = "お題を見る";
+            document.getElementById('btn-toggle-odai').classList.remove('hidden');
+            clearCanvas();
+        }
+
+        function toggleOdaiVisibility() {
+            const display = document.getElementById('odai-display');
+            const btn = document.getElementById('btn-toggle-odai');
+            if (display.classList.contains('hidden')) {
+                display.classList.remove('hidden');
+                btn.innerText = "お題を隠す";
+            } else {
+                display.classList.add('hidden');
+                btn.innerText = "お題を見る";
+            }
+        }
+
+        function showAnswer() {
+            if (!currentOdai) {
+                alert("まだお題が設定されていません。");
+                return;
+            }
+            const display = document.getElementById('odai-display');
+            display.classList.remove('hidden');
+            document.getElementById('btn-toggle-odai').classList.add('hidden');
+            alert("正解は... 「" + currentOdai + "」 です！");
+        }
+
+        // --- お絵描き機能（マウス & タッチ対応） ---
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#000000';
+
+        function startDrawing(e) {
+            isDrawing = true;
+            draw(e);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            // マウス位置またはタッチ位置の取得
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY;
+            
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+            ctx.beginPath();
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // イベントリスナーの登録
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDrawing(e); });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
+        canvas.addEventListener('touchend', stopDrawing);
+    </script>
+</body>
+</html>
