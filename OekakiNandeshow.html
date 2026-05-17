@@ -40,12 +40,16 @@
             border-bottom: none;
         }
 
+        .button-group {
+            margin-bottom: 10px;
+        }
+
         button {
             background-color: #4f46e5;
             color: white;
             border: none;
-            padding: 10px 20px;
-            font-size: 16px;
+            padding: 10px 15px;
+            font-size: 14px;
             border-radius: 6px;
             cursor: pointer;
             margin: 5px;
@@ -55,6 +59,20 @@
         button:hover {
             background-color: #4338ca;
         }
+
+        /* ジャンルごとのカラー設定 */
+        button.fruit { background-color: #e11d48; }
+        button.fruit:hover { background-color: #be123c; }
+
+        button.animal { background-color: #d97706; }
+        button.animal:hover { background-color: #b45309; }
+
+        button.sea { background-color: #0284c7; }
+        button.sea:hover { background-color: #0369a1; }
+
+        /* ぬいぐるみボタン用の新色（ピンクパープル） */
+        button.plush { background-color: #ec4899; }
+        button.plush:hover { background-color: #db2777; }
 
         button.secondary {
             background-color: #4b5563;
@@ -88,7 +106,7 @@
             background-color: white;
             border-radius: 8px;
             cursor: crosshair;
-            touch-action: none; /* スマホでのスクロール防止 */
+            touch-action: none;
         }
 
         .hidden {
@@ -101,10 +119,15 @@
     <h1>お絵描き当てゲーム</h1>
 
     <div class="container">
-        <!-- 1. お題設定エリア -->
         <div class="section">
             <h3>① お題を決めよう（描く人だけ見てね）</h3>
-            <button onclick="generateFruitOdai()">果物のお題を出す</button>
+            
+            <div class="button-group">
+                <button class="fruit" onclick="generateOdai('fruit')">果物のお題</button>
+                <button class="animal" onclick="generateOdai('animal')">動物のお題</button>
+                <button class="sea" onclick="generateOdai('sea')">海のお題</button>
+                <button class="plush" onclick="generateOdai('plush')">ぬいぐるみのお題</button>
+            </div>
             <button class="secondary" onclick="customOdai()">自由にお題を決める</button>
             
             <div id="odai-box" class="hidden">
@@ -113,7 +136,6 @@
             </div>
         </div>
 
-        <!-- 2. キャンバスエリア -->
         <div class="section">
             <h3>② 絵を描こう！</h3>
             <canvas id="canvas" width="400" height="400"></canvas>
@@ -121,7 +143,6 @@
             <button class="danger" onclick="clearCanvas()">画面をクリア</button>
         </div>
 
-        <!-- 3. 回答・答え合わせエリア -->
         <div class="section">
             <h3>③ みんなで当てよう！</h3>
             <button class="secondary" onclick="showAnswer()">答え合わせ（お題を表示）</button>
@@ -129,8 +150,13 @@
     </div>
 
     <script>
-        // 果物のお題リスト
-        const fruits = ["りんご", "バナナ", "ぶどう", "いちご", "すいか", "メロン", "みかん", "もも", "パイナップル", "キウイ", "さくらんぼ", "くり", "レモン", "かき"];
+        // お題データ（ぬいぐるみのリストを追加しました）
+        const odaiLists = {
+            fruit: ["りんご", "バナナ", "ぶどう", "いちご", "すいか", "メロン", "みかん", "もも", "パイナップル", "キウイ", "さくらんぼ", "レモン", "アボガド"],
+            animal: ["いぬ", "ねこ", "ぞう", "きりん", "らいおん", "ぱんだ", "うさぎ", "こあら", "ごりら", "ぺんぎん", "はむすたー", "にわとり", "くま"],
+            sea: ["くじら", "いるか", "さめ", "たこ", "いか", "かに", "えび", "ひとで", "ちんあなご", "たつのおとしご", "かいそう", "かい（貝）", "うみがめ", "くらげ"],
+            plush: ["クラちゃん", "ぐーちゃん", "トトロ", "くじらさん", "ユニー", "ルニー", "ピカチュウ", "ハニトン", "りんご先生", "リーナベル", "ダッフィー", "ピーちゃん", "スーちゃん"]
+        };
         
         let currentOdai = "";
         const canvas = document.getElementById('canvas');
@@ -138,9 +164,10 @@
         let isDrawing = false;
 
         // --- お題の処理 ---
-        function generateFruitOdai() {
-            const randomIndex = Math.floor(Math.random() * fruits.length);
-            setOdai(fruits[randomIndex]);
+        function generateOdai(genre) {
+            const list = odaiLists[genre];
+            const randomIndex = Math.floor(Math.random() * list.length);
+            setOdai(list[randomIndex]);
         }
 
         function customOdai() {
@@ -155,7 +182,7 @@
             document.getElementById('odai-box').classList.remove('hidden');
             const display = document.getElementById('odai-display');
             display.innerText = currentOdai;
-            display.classList.add('hidden'); // 最初は隠す
+            display.classList.add('hidden');
             document.getElementById('btn-toggle-odai').innerText = "お題を見る";
             document.getElementById('btn-toggle-odai').classList.remove('hidden');
             clearCanvas();
@@ -197,7 +224,6 @@
         function draw(e) {
             if (!isDrawing) return;
             
-            // マウス位置またはタッチ位置の取得
             const rect = canvas.getBoundingClientRect();
             let clientX, clientY;
             
@@ -227,7 +253,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
-        // イベントリスナーの登録
+        // イベントリスナー
         canvas.addEventListener('mousedown', startDrawing);
         canvas.addEventListener('mousemove', draw);
         canvas.addEventListener('mouseup', stopDrawing);
